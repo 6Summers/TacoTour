@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 265919708705530523}
   - component: {fileID: 4138928922479970365}
   - component: {fileID: 671073116390614330}
-  - component: {fileID: -4233665126681231476}
+  - component: {fileID: 954185446331620740}
   m_Layer: 0
   m_Name: Ceiling
   m_TagString: Untagged
@@ -131,7 +131,7 @@ BoxCollider2D:
   serializedVersion: 2
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
---- !u!114 &-4233665126681231476
+--- !u!114 &954185446331620740
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
