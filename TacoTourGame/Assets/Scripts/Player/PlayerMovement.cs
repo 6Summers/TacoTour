@@ -24,11 +24,11 @@ public class PlayerMovement : MonoBehaviour
     [Header("Jumps")] 
     [SerializeField] private float catJump;
     [SerializeField] private float dogJump;
-    
+    [SerializeField] private float speedCollision = 5;          //When the character is stucked under a platform
     private bool isActionActive = false;                        //This variable is to know if the dog is dizzy
     [SerializeField] private float dizzyDog = 1;               //Dizy time 
     private float actionTimer = 0f;                             //Timer to track the elapsed time of the action
-    
+    private int ceilingCollisionCount = 0;                      //to control when the character is collisioning with the ceiling
     void Start()
     {
         rigidbody =  gameObject.GetComponent<Rigidbody2D>();
@@ -53,13 +53,22 @@ public class PlayerMovement : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.S) && IsGrounded())
         {
-            animator.SetTrigger("isCrouching");
+            animator.SetBool("crouching", true);
+        }
+        if (Input.GetKeyUp(KeyCode.S))
+        {
+            animator.SetBool("crouching", false);
         }
 
         if (Input.GetKeyDown((KeyCode.K)) && cooldown <= 0) //add cooldown check
         {
             isTaco = !isTaco;
-            
+            bool theAnimator = animator.GetBool("crouching");
+            if (theAnimator)
+            {
+                Debug.Log("animator true");
+                animator.SetBool("crouching", false);
+            }
             animator.SetBool("isTaco", isTaco);
 
             if (!isTaco) jumpForce = catJump;
@@ -69,13 +78,10 @@ public class PlayerMovement : MonoBehaviour
             
         }
         
-        if (Input.GetKeyDown(KeyCode.A) && !isTaco && playerState != PlayerState.Clinging && IsGrounded())
+        if (Input.GetKeyDown(KeyCode.A) && !isTaco && playerState != PlayerState.Clinging && !IsGrounded())
         {
-            Jump();
             playerState = PlayerState.Reaching;
             animator.SetTrigger("isReaching");
-            
-            Debug.Log("Reaching");
 
         }
         
@@ -84,13 +90,9 @@ public class PlayerMovement : MonoBehaviour
             rigidbody.gravityScale = 1.3f;
             playerState = PlayerState.Falling;
             animator.SetTrigger("isFalling");
-            
-            Debug.Log("Falling");
 
         }
 
-        
-        
         if (isActionActive)
         {
             actionTimer += Time.deltaTime;                          //We increment timer
@@ -118,45 +120,75 @@ public class PlayerMovement : MonoBehaviour
         {
             KillPlayer();
         }
-        else if (other.CompareTag("Ceiling") && playerState == PlayerState.Reaching)
+        else if (other.CompareTag("Ceiling")) 
         {
-            GameObject ceiling = other.GameObject();
-            Vector2 ceilingPosition = ceiling.transform.position;
-            Vector2 characterPosition;
-
-            characterPosition.x = transform.position.x;
-            characterPosition.y = ceilingPosition.y;
-            characterPosition.y += ceiling.GetComponent<SpriteRenderer>().bounds.size.y/ 2 -
-                                  GetComponent<SpriteRenderer>().bounds.size.y / 2;
+            ceilingCollisionCount++;                                                // Increment the counter
             
-            //stop gravity simulation
-            rigidbody.velocity  = new Vector2(0, 0);
-            //rigidbody.bodyType = RigidbodyType2D.Kinematic;
-            rigidbody.gravityScale = 0f;
+            if (playerState == PlayerState.Reaching || playerState == PlayerState.Clinging)
+            {
+                GameObject ceiling = other.GameObject();
+                Vector2 ceilingPosition = ceiling.transform.position;
+                Vector2 characterPosition;
 
-            transform.position = characterPosition;
+                characterPosition.x = transform.position.x;
+                characterPosition.y = ceilingPosition.y;
+                characterPosition.y += ceiling.GetComponent<SpriteRenderer>().bounds.size.y/ 2 -
+                                       GetComponent<SpriteRenderer>().bounds.size.y / 2;
             
-            Debug.Log(characterPosition.y);
+                //stop gravity simulation
+                rigidbody.velocity  = new Vector2(0, 0);
+                //rigidbody.bodyType = RigidbodyType2D.Kinematic;
+                rigidbody.gravityScale = 0f;
 
-            playerState = PlayerState.Clinging;
+                transform.position = characterPosition;
+            
+                Debug.Log("counter " + ceilingCollisionCount);
+
+                playerState = PlayerState.Clinging;
+            }
+            
         }
         else if (other.CompareTag("EndZone"))
         {
-            Debug.Log("theEnd");
             Destroy(this.GameObject());
             SceneManager.LoadScene("EndTutorial");
         }
+     
+        
     }
 
     private void OnTriggerExit2D(Collider2D other)
     {
-        Debug.Log("on trigger exit");
-        if (other.CompareTag("Ceiling") && playerState == PlayerState.Clinging)
+        if (other.CompareTag("Ceiling"))
         {
-            rigidbody.gravityScale = 1.3f;
-            playerState = PlayerState.Falling;
-            animator.SetTrigger("isFalling");
-            Debug.Log("no mas ceilling");
+            ceilingCollisionCount--; // Decrement the counter
+
+            if (ceilingCollisionCount <= 0 && playerState == PlayerState.Clinging)
+            {
+                rigidbody.gravityScale = 1.3f;
+                playerState = PlayerState.Falling;
+                animator.SetTrigger("isFalling");
+            }
+
+            if (playerState == PlayerState.Reaching)
+            {
+                rigidbody.gravityScale = 1.3f;
+                playerState = PlayerState.Falling;
+                animator.SetTrigger("isFalling");
+            }
+        }
+    }
+
+    private void OnCollisionStay2D(Collision2D other)
+    {
+        if (other.gameObject.tag == "CrouchZone")
+        {
+            transform.position = new Vector3(transform.position.x, -4.107f, transform.position.z);
+            Debug.Log("on collision stay ");
+        
+            Vector3 position = gameObject.GetComponent<Transform>().position;
+            position = new Vector3(position.x - speed * Time.deltaTime, position.y, position.z);
+            gameObject.GetComponent<Transform>().position = position;
         }
     }
 
@@ -170,6 +202,7 @@ public class PlayerMovement : MonoBehaviour
         //rigidbody.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
         
         rigidbody.velocity = new Vector2(0, jumpForce);
+        
     }
 
     private void KillPlayer()
@@ -177,4 +210,5 @@ public class PlayerMovement : MonoBehaviour
         Destroy(this.GameObject());
         SceneManager.LoadScene("GameOver");
     }
+    
 }
