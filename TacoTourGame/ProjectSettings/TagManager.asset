@@ -8,6 +8,8 @@ TagManager:
   - Ceiling
   - EndZone
   - CrouchZone
+  - PowerUp
+  - Platform
   layers:
   - Default
   - TransparentFX
