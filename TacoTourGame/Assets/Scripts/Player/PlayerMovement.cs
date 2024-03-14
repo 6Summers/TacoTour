@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -33,12 +35,12 @@ public class PlayerMovement : MonoBehaviour
     [Header("Jumps")] 
     [SerializeField] private float catJump;
     [SerializeField] private float dogJump;
-    [SerializeField] private float speedCollision = 5;          //When the character is stucked under a platform
+    //[SerializeField] private float speedCollision = 5;          //When the character is stucked under a platform
     private bool isActionActive = false;                        //This variable is to know if the dog is dizzy
     [SerializeField] private float dizzyDog = 1;               //Dizy time 
     private float actionTimer = 0f;                             //Timer to track the elapsed time of the action
     private int ceilingCollisionCount = 0;                      //to control when the character is collisioning with the ceiling
-    private Image powerUpImage;
+    //private Image powerUpImage;
 
     private Button optionButton;
     private Button closeButton;
@@ -51,9 +53,17 @@ public class PlayerMovement : MonoBehaviour
     private float limitTimePowerUp = 5.0f;
     private float defaultCameraVelocity;
     private bool invulnerableState = false;
+
+    [Header("Power-Ups UI")]
+    [SerializeField] private Transform powerUpUIParent; 
+    [SerializeField] private GameObject powerUpUIPrefab;
+    private List<GameObject> powerUpItems = new List<GameObject>(); // Tracks the current power-up icons
+    private Slider progressBar;
+    private GameObject barObject = null;
+    private float offsetX = 0;
     void Start()
     {
-        powerUpImage = GameObject.Find("PowerUpActive").GetComponent<Image>();
+        //powerUpImage = GameObject.Find("PowerUpIcon").GetComponent<Image>();
         pawseCanvas = GameObject.Find("Pawse").GetComponent<TextMeshProUGUI>();
         pressP = GameObject.Find("PressP").GetComponent<TextMeshProUGUI>();
         optionButton = GameObject.Find("OptionButton").GetComponent<Button>();
@@ -61,6 +71,14 @@ public class PlayerMovement : MonoBehaviour
         
         GameObject platform = GameObject.Find("PlatformComplete");
         platformMovement = platform.GetComponent<PlatformMovement>();
+        // Find the GameObject named "BarObject" and its Slider component
+        barObject = GameObject.Find("BarObject");
+        
+        if (barObject != null)
+        {
+            progressBar = barObject.GetComponentInChildren<Slider>();
+            barObject.SetActive(false);
+        }
         
         cameraMovement = background.GetComponent<CameraMovement>();
         backgroundMovement = background.GetComponent<BackgroundLoop>();
@@ -72,18 +90,13 @@ public class PlayerMovement : MonoBehaviour
         
         animator.SetBool("isTaco", isTaco);
         jumpForce = dogJump;
-        powerUpImage.enabled = false;
+        //powerUpImage.enabled = false;
         pawseCanvas.enabled = false;
         pressP.enabled = false;
         optionButton.gameObject.SetActive(false);
         closeButton.gameObject.SetActive(false);
     }
-/*
-    void FixedUpdate()
-    {
-        rigidbody.velocity = new Vector2(speed, rigidbody.velocity.y);
-    }
-*/
+
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.P))
@@ -184,66 +197,74 @@ public class PlayerMovement : MonoBehaviour
                 playerState = PlayerState.Running; //We reset the player state to running
             }
 
-            if (Input.GetKeyDown(KeyCode.L) && !powerUpActivated && powerUpImage.enabled)
+            if (Input.GetKeyDown(KeyCode.L) && !powerUpActivated && powerUpItems.Count > 0)
             {
+                powerUpActivated = true;
+                barObject.SetActive(true);
                 if (isTaco)
                 {
-                    powerUpActivated = true;
+                    int lastIndex = powerUpItems.Count - 1;
+                    GameObject iconToRemove = powerUpItems[lastIndex];
+                    powerUpItems.RemoveAt(lastIndex);
+                    Destroy(iconToRemove);
                     applyVelocity(defaultVelocity * 1.2f);
+                    progressBar.maxValue = limitTimePowerUp;
+                    progressBar.value = limitTimePowerUp;
+                    powerUpTimer = limitTimePowerUp;
+                    Debug.Log("progress bar val " + progressBar.value + " " + limitTimePowerUp );
                     //change the animation of the dog
                 }
                 else
                 {
                     invulnerableState = true;
-                    
+                    progressBar.maxValue = limitTimePowerUp*4;
+                    progressBar.value = limitTimePowerUp*4;
                     //change the animation of the cat
                 }
-
+                
             }
-            
             //Show when the power up is activated
             if (powerUpActivated) //if (powerUpActivated && powerUpImage.enabled)
             {
                 if (isTaco)
                 {
-                    //Debug.Log("Velocity " + platformMovement.GetSpeed());
-                    if (powerUpTimer >= limitTimePowerUp)
+                    if (powerUpTimer <= 0)
                     {
-                        powerUpImage.enabled = false;
                         powerUpTimer = 0;
                         applyVelocity(defaultVelocity);
                         powerUpActivated = false;
-                        //Debug.Log("times up " +  platformMovement.GetSpeed());
+                        barObject.SetActive(false);
                     }
                     else
                     {
-                        powerUpTimer += Time.deltaTime;
+                        powerUpTimer -= Time.deltaTime;
+                        progressBar.value -= Time.deltaTime;
+                  
                         if(platformMovement.GetSpeed() < defaultVelocity * 1.5f)
                             applyVelocity(defaultVelocity * 1.5f);
-                        //Debug.Log("Time " + powerUpTimer);
                     }
                 }
                 else //if is Tour
                 {
                     if (platformMovement.GetSpeed() > defaultVelocity)
                     {
-                        powerUpImage.enabled = false;
                         powerUpTimer = 0; 
                         applyVelocity(defaultVelocity);
                         powerUpActivated = false;
+                        barObject.SetActive(false);
                     }
 
-                    if (powerUpTimer >= limitTimePowerUp*4)
+                    if (powerUpTimer <= 0)
                     {
-                        powerUpImage.enabled = false;
                         powerUpTimer = 0;
                         powerUpActivated = false;
                         invulnerableState = false;
-                        //Debug.Log("times up " +  platformMovement.GetSpeed());
+                        barObject.SetActive(false);
                     }
                     else
                     {
-                        powerUpTimer += Time.deltaTime;
+                        powerUpTimer -= Time.deltaTime;
+                        progressBar.value -= Time.deltaTime;
                         invulnerableState = true;
                     }
                 }
@@ -294,10 +315,24 @@ public class PlayerMovement : MonoBehaviour
             
         }
         
-        if (other.CompareTag("PowerUp"))
+        if (other.CompareTag("PowerUp"))  //******************************************************************************************************
         {
             Destroy(other.gameObject);
-            powerUpImage.enabled = true;
+
+            // Check if we can add more power-up icons
+            if (powerUpItems.Count < 3)
+            {
+                GameObject newIcon = Instantiate(powerUpUIPrefab, powerUpUIParent);
+                
+                // Calculate the new position
+                
+                float offsetX = powerUpItems.Count * 30;
+                
+                newIcon.transform.localPosition = new Vector3(offsetX , 0, 0); 
+                powerUpItems.Add(newIcon);
+
+            }
+            
         }
         
         if (other.CompareTag("EndZone"))
