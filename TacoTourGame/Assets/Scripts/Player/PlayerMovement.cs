@@ -69,7 +69,8 @@ public class PlayerMovement : MonoBehaviour
         optionButton = GameObject.Find("OptionButton").GetComponent<Button>();
         closeButton = GameObject.Find("CloseButton").GetComponent<Button>();
         
-        GameObject platform = GameObject.Find("PlatformComplete");
+        //GameObject platform = GameObject.Find("PlatformComplete");
+        GameObject platform = GameObject.FindWithTag("Platform");
         platformMovement = platform.GetComponent<PlatformMovement>();
         // Find the GameObject named "BarObject" and its Slider component
         barObject = GameObject.Find("BarObject");
@@ -368,7 +369,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnCollisionStay2D(Collision2D other)
     {
-        if (other.gameObject.tag == "CrouchZone")
+        if (other.gameObject.tag == "Platform")
         {
             transform.position = new Vector3(transform.position.x, -4.107f, transform.position.z);
         
@@ -438,7 +439,7 @@ public class PlayerMovement : MonoBehaviour
             }
         }
             
-        GameObject[] crouchZones = GameObject.FindGameObjectsWithTag("CrouchZone");
+        GameObject[] crouchZones = GameObject.FindGameObjectsWithTag("Floor");
         foreach (GameObject crouchZone in crouchZones)
         {
             PlatformMovement platformMovement = crouchZone.GetComponent<PlatformMovement>();
