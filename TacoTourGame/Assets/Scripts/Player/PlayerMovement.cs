@@ -10,7 +10,6 @@ using TMPro;
 
 public class PlayerMovement : MonoBehaviour
 {
-
     private PlatformMovement platformMovement;
     private CameraMovement cameraMovement;
     private BackgroundLoop backgroundMovement;
@@ -38,13 +37,11 @@ public class PlayerMovement : MonoBehaviour
     [Header("Jumps")] 
     [SerializeField] private float catJump;
     [SerializeField] private float dogJump;
-    //[SerializeField] private float speedCollision = 5;          //When the character is stucked under a platform
     private bool isActionActive = false;                        //This variable is to know if the dog is dizzy
     [SerializeField] private float dizzyDog = 1;               //Dizy time 
     private float actionTimer = 0f;                             //Timer to track the elapsed time of the action
     private int ceilingCollisionCount = 0;                      //to control when the character is collisioning with the ceiling
-    //private Image powerUpImage;
-
+    
     private Button optionButton;
     private Button closeButton;
     private TextMeshProUGUI pawseCanvas;
@@ -63,19 +60,14 @@ public class PlayerMovement : MonoBehaviour
     private List<GameObject> powerUpItems = new List<GameObject>(); // Tracks the current power-up icons
     private Slider progressBar;
     private GameObject barObject = null;
-    private float offsetX = 0;
     void Start()
     {
-        //powerUpImage = GameObject.Find("PowerUpIcon").GetComponent<Image>();
+        GameObject platform = GameObject.FindWithTag("Platform");
         pawseCanvas = GameObject.Find("Pawse").GetComponent<TextMeshProUGUI>();
         pressP = GameObject.Find("PressP").GetComponent<TextMeshProUGUI>();
         optionButton = GameObject.Find("OptionButton").GetComponent<Button>();
         closeButton = GameObject.Find("CloseButton").GetComponent<Button>();
-        
-        //GameObject platform = GameObject.Find("PlatformComplete");
-        GameObject platform = GameObject.FindWithTag("Platform");
         platformMovement = platform.GetComponent<PlatformMovement>();
-        // Find the GameObject named "BarObject" and its Slider component
         barObject = GameObject.Find("BarObject");
         
         if (barObject != null)
@@ -94,7 +86,6 @@ public class PlayerMovement : MonoBehaviour
         
         animator.SetBool("isTaco", isTaco);
         jumpForce = dogJump;
-        //powerUpImage.enabled = false;
         pawseCanvas.enabled = false;
         pressP.enabled = false;
         optionButton.gameObject.SetActive(false);
@@ -136,7 +127,7 @@ public class PlayerMovement : MonoBehaviour
         {
             if(cooldown>0) cooldown--;
         
-            if (Input.GetKeyDown(KeyCode.Space) && IsGrounded())
+            if (Input.GetKeyDown(KeyCode.Space) && IsGrounded() && !animator.GetBool("crouching"))
             {
                 Jump();
             }
@@ -357,7 +348,7 @@ public class PlayerMovement : MonoBehaviour
             
         }
         
-        if (other.CompareTag("PowerUp"))  //******************************************************************************************************
+        if (other.CompareTag("PowerUp")) 
         {
             Destroy(other.gameObject);
 
@@ -410,7 +401,8 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnCollisionStay2D(Collision2D other)
     {
-        if (other.gameObject.tag == "Platform")
+        //if (other.gameObject.tag == "Platform")
+        if (other.gameObject.tag == "CrouchZone")
         {
             transform.position = new Vector3(transform.position.x, -4.107f, transform.position.z);
         
@@ -447,7 +439,6 @@ public class PlayerMovement : MonoBehaviour
 
     void Jump()
     {
-        //rigidbody.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
         
         rigidbody.velocity = new Vector2(0, jumpForce);
         

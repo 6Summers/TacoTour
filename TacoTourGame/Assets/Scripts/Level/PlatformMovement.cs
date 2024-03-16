@@ -16,7 +16,7 @@ public class PlatformMovement : MonoBehaviour
     void Update()
     {
         Vector3 position = gameObject.GetComponent<Transform>().position;
-        if(position.x < -20)
+        if(position.x < -21)
             Destroy(gameObject);
         else
         {
