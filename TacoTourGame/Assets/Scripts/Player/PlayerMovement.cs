@@ -19,6 +19,7 @@ public class PlayerMovement : MonoBehaviour
     private float jumpForce = 50f;
     private Rigidbody2D rigidbody;
     private Animator animator;
+    private bool catToDog;
     
     //enum for checking character state
     private enum PlayerState {Running,  Crouching, Reaching, Clinging, Falling, Stunned}
@@ -26,6 +27,8 @@ public class PlayerMovement : MonoBehaviour
     
     [Header("Character Change Variables")]
     [SerializeField] private float changeCooldown =1.2f;
+    private float reSpawnTourTime = 2f;
+    private bool delayCat = false;
     private float cooldown;
     private float defaultVelocity = 0f;
     private bool powerUpActivated = false;
@@ -157,7 +160,11 @@ public class PlayerMovement : MonoBehaviour
                 }
                 animator.SetBool("isTaco", isTaco);
 
-                if (!isTaco) jumpForce = catJump;
+                if (!isTaco)
+                {
+                    catToDog = true;
+                    jumpForce = catJump;
+                }
                 else jumpForce = dogJump;
                 
                 cooldown = changeCooldown;
@@ -202,12 +209,12 @@ public class PlayerMovement : MonoBehaviour
             {
                 powerUpActivated = true;
                 barObject.SetActive(true);
+                int lastIndex = powerUpItems.Count - 1;
+                GameObject iconToRemove = powerUpItems[lastIndex];
+                powerUpItems.RemoveAt(lastIndex);
+                Destroy(iconToRemove);
                 if (isTaco)
                 {
-                    int lastIndex = powerUpItems.Count - 1;
-                    GameObject iconToRemove = powerUpItems[lastIndex];
-                    powerUpItems.RemoveAt(lastIndex);
-                    Destroy(iconToRemove);
                     applyVelocity(defaultVelocity * 1.2f);
                     progressBar.maxValue = limitTimePowerUp;
                     progressBar.value = limitTimePowerUp;
@@ -217,9 +224,12 @@ public class PlayerMovement : MonoBehaviour
                 }
                 else
                 {
-                    invulnerableState = true;
                     progressBar.maxValue = limitTimePowerUp*4;
                     progressBar.value = limitTimePowerUp*4;
+                    powerUpTimer = limitTimePowerUp*4;
+                    invulnerableState = true;
+                    
+                    
                     //change the animation of the cat
                 }
                 
@@ -229,6 +239,14 @@ public class PlayerMovement : MonoBehaviour
             {
                 if (isTaco)
                 {
+                    if (catToDog)
+                    {
+                        powerUpTimer = 0; 
+                        applyVelocity(defaultVelocity);
+                        powerUpActivated = false;
+                        invulnerableState = false;
+                        barObject.SetActive(false);
+                    }
                     if (powerUpTimer <= 0)
                     {
                         powerUpTimer = 0;
@@ -252,6 +270,7 @@ public class PlayerMovement : MonoBehaviour
                         powerUpTimer = 0; 
                         applyVelocity(defaultVelocity);
                         powerUpActivated = false;
+                        invulnerableState = false;
                         barObject.SetActive(false);
                     }
 
@@ -261,6 +280,7 @@ public class PlayerMovement : MonoBehaviour
                         powerUpActivated = false;
                         invulnerableState = false;
                         barObject.SetActive(false);
+                        invulnerableState = false;
                     }
                     else
                     {
@@ -270,6 +290,22 @@ public class PlayerMovement : MonoBehaviour
                     }
                 }
             
+            }
+            else if (delayCat)
+            {
+                if (reSpawnTourTime <= 0)
+                {
+                    //animator.SetBool("tour_run",false);
+                    //animator.SetBool("isTaco", false);
+                    //animator.SetBool("crouching", false);
+                    applyVelocity(defaultVelocity);
+                    applyVelocityCamera(defaultCameraVelocity);
+                    reSpawnTourTime = 2f;
+                }
+                else
+                {
+                    reSpawnTourTime -= Time.deltaTime;
+                }
             }
         }//end if paused
         
@@ -285,8 +321,13 @@ public class PlayerMovement : MonoBehaviour
             {
                 //pausar juego
                 //lift Tour on a platform
+                applyVelocity(0);
+                applyVelocityCamera(0);
+                gameObject.transform.position = new Vector3(gameObject.transform.position.x, 5f);
+                animator.SetTrigger("isReaching"); //change animation to revive
+                powerUpTimer = 0;
+                delayCat = true;
                 SpawnPlatformAtPosition();
-                    
             }
         }
         else if (other.CompareTag("Ceiling")) 
@@ -376,6 +417,15 @@ public class PlayerMovement : MonoBehaviour
             Vector3 position = gameObject.GetComponent<Transform>().position;
             position = new Vector3(position.x - speed * Time.deltaTime, position.y, position.z);
             gameObject.GetComponent<Transform>().position = position;
+        }
+    }
+
+    private void OnCollisionEnter2D(Collision2D other)
+    {
+        if (other.gameObject.tag == "Platform" && delayCat)
+        {
+            animator.SetTrigger("isFalling");
+            animator.SetBool("isTaco", isTaco);
         }
     }
 
