@@ -32,7 +32,10 @@ public class ButtonClickDetect: MonoBehaviour
     // Method to handle ButtonPlay click event
     void HandlePlayButtonClick()
     {
-        SceneManager.LoadScene("SampleScene");
+        //SceneManager.LoadScene("SampleScene");
+        //changed for tutorial testing
+        SceneManager.LoadScene("TutorialDesign");
+        
     }
 
     // Method to handle ButtonClose click event

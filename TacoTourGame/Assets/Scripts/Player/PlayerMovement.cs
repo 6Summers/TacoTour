@@ -60,6 +60,9 @@ public class PlayerMovement : MonoBehaviour
     private List<GameObject> powerUpItems = new List<GameObject>(); // Tracks the current power-up icons
     private Slider progressBar;
     private GameObject barObject = null;
+    
+    [Header("Reference to platforms")] 
+    [SerializeField] private Transform level;
     void Start()
     {
         GameObject platform = GameObject.FindWithTag("Platform");
@@ -334,7 +337,7 @@ public class PlayerMovement : MonoBehaviour
                 characterPosition.x = transform.position.x;
                 characterPosition.y = ceilingPosition.y;
                 characterPosition.y += ceiling.GetComponent<SpriteRenderer>().bounds.size.y/ 2 -
-                                       GetComponent<SpriteRenderer>().bounds.size.y / 2;
+                                       GetComponent<SpriteRenderer>().bounds.size.y;
             
                 //stop gravity simulation
                 rigidbody.velocity  = new Vector2(0, 0);
@@ -401,14 +404,27 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnCollisionStay2D(Collision2D other)
     {
-        //if (other.gameObject.tag == "Platform")
+       // if (other.gameObject.tag == "Platform")
         if (other.gameObject.tag == "CrouchZone")
         {
-            transform.position = new Vector3(transform.position.x, -4.107f, transform.position.z);
-        
-            Vector3 position = gameObject.GetComponent<Transform>().position;
-            position = new Vector3(position.x - speed * Time.deltaTime, position.y, position.z);
-            gameObject.GetComponent<Transform>().position = position;
+            //if the player is below the platform
+            //funciona por ahora, toca revisar player collider y size para saber cuando aplicarlo
+            if (other.gameObject.transform.position.y > gameObject.GetComponent<Transform>().position.y)
+            {
+                //TODO: change it so it takes the bottom of the platform above it and subtracts from the y position
+                //Check bounds
+                transform.position = new Vector3(transform.position.x, -4.107f, transform.position.z);
+                /*
+                float newYPosition = other.gameObject.GetComponent<SpriteRenderer>().bounds.min.y 
+                                     - gameObject.GetComponent<Transform>().localScale.y / 3;
+                
+                transform.position = new Vector3(transform.position.x, newYPosition, transform.position.z);*/
+                
+                Vector3 position = gameObject.GetComponent<Transform>().position;
+                position = new Vector3(position.x - speed * Time.deltaTime, position.y, position.z);
+                gameObject.GetComponent<Transform>().position = position;
+            }
+           
         }
     }
 
@@ -447,7 +463,13 @@ public class PlayerMovement : MonoBehaviour
     private void KillPlayer()
     {
         Destroy(this.GameObject());
-        SceneManager.LoadScene("GameOver");
+        GameObject gameOver = GameObject.Find("GameOver");
+        //Debug.Log(gameOver);
+        //TODO: make Game Over a canvas so "try again" button takes you to the correct level
+        if(gameOver!=null)
+           gameOver.SetActive(true);
+        else 
+            SceneManager.LoadScene("GameOver");
     }
 
     private void applyVelocityCamera(float newVelocity)
@@ -460,6 +482,20 @@ public class PlayerMovement : MonoBehaviour
 
     private void applyVelocity(float newVelocity)
     {
+        int platformAmount = level.GetChildCount();
+        PlatformMovement platform;
+        
+        //Goes through all the children of the game object containing the design of the level and changes their speed
+        for (int i = 0; i < platformAmount; i++)
+        {
+            platform = level.GetChild(i).GetComponent<PlatformMovement>();
+            if (platform!= null)
+            {
+                platform.SetSpeed(newVelocity); // Change the speed to the desired value
+            }
+        }
+        
+        /*
         GameObject[] platforms = GameObject.FindGameObjectsWithTag("Platform");
         foreach (GameObject platform in platforms)
         {
@@ -507,7 +543,8 @@ public class PlayerMovement : MonoBehaviour
                 platformMovement.SetSpeed(newVelocity); // Change the speed to the desired value
             }
         }
-        
+       */ 
     }
+    
 
 }
