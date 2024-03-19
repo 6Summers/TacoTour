@@ -18,7 +18,6 @@ public class PlayerMovement : MonoBehaviour
     private float jumpForce = 50f;
     private Rigidbody2D rigidbody;
     private Animator animator;
-    private bool catToDog;
     
     //enum for checking character state
     private enum PlayerState {Running,  Crouching, Reaching, Clinging, Falling, Stunned}
@@ -150,16 +149,21 @@ public class PlayerMovement : MonoBehaviour
                 if (theAnimator)
                 {
                     Debug.Log("animator true");
+                    
                     animator.SetBool("crouching", false);
                 }
                 animator.SetBool("isTaco", isTaco);
 
                 if (!isTaco)
                 {
-                    catToDog = true;
                     jumpForce = catJump;
                 }
-                else jumpForce = dogJump;
+                else
+                {
+                    jumpForce = dogJump;
+                }
+
+                
                 
                 cooldown = changeCooldown;
                 
@@ -233,8 +237,10 @@ public class PlayerMovement : MonoBehaviour
             {
                 if (isTaco)
                 {
-                    if (catToDog)
+                    if (invulnerableState)
                     {
+                        Debug.Log(powerUpTimer);
+                        Debug.Log("PIERDE PODER");
                         powerUpTimer = 0; 
                         applyVelocity(defaultVelocity);
                         powerUpActivated = false;
@@ -257,8 +263,8 @@ public class PlayerMovement : MonoBehaviour
                             applyVelocity(defaultVelocity * 1.5f);
                     }
                 }
-                else //if is Tour
-                {
+                else 
+                {   
                     if (platformMovement.GetSpeed() > defaultVelocity)
                     {
                         powerUpTimer = 0; 
@@ -289,9 +295,6 @@ public class PlayerMovement : MonoBehaviour
             {
                 if (reSpawnTourTime <= 0)
                 {
-                    //animator.SetBool("tour_run",false);
-                    //animator.SetBool("isTaco", false);
-                    //animator.SetBool("crouching", false);
                     applyVelocity(defaultVelocity);
                     applyVelocityCamera(defaultCameraVelocity);
                     reSpawnTourTime = 2f;
@@ -311,7 +314,7 @@ public class PlayerMovement : MonoBehaviour
         {
             if(!invulnerableState)
                 KillPlayer();
-            else // compara si y < 0
+            else if(gameObject.transform.position.y < 0)
             {
                 //pausar juego
                 //lift Tour on a platform
@@ -482,7 +485,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void applyVelocity(float newVelocity)
     {
-        int platformAmount = level.GetChildCount();
+        int platformAmount = level.childCount;
         PlatformMovement platform;
         
         //Goes through all the children of the game object containing the design of the level and changes their speed
