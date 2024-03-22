@@ -5,7 +5,7 @@ using Vector2 = System.Numerics.Vector2;
 
 public class PlatformMovement : MonoBehaviour
 {
-    [SerializeField] private float speed = 5;
+    [SerializeField] private float speed = 0;
     // Start is called before the first frame update
     void Start()
     {
@@ -16,7 +16,7 @@ public class PlatformMovement : MonoBehaviour
     void Update()
     {
         Vector3 position = gameObject.GetComponent<Transform>().position;
-        if(position.x < -20)
+        if(position.x < -21)
             Destroy(gameObject);
         else
         {
@@ -24,5 +24,13 @@ public class PlatformMovement : MonoBehaviour
             gameObject.GetComponent<Transform>().position = position;
         }
         
+    }
+    
+    public float GetSpeed() {
+        return speed;
+    }
+
+    public void SetSpeed(float newSpeed) {
+        speed = newSpeed;
     }
 }

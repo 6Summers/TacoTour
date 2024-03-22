@@ -8,6 +8,7 @@ public class BackgroundLoop : MonoBehaviour
     [SerializeField] private GameObject square1;
     [SerializeField] private  GameObject square2;
     [SerializeField] private int backGroundOffset = 20;
+    private bool isPaused = false;
 
     bool IsBackgroundOutsideCamera(GameObject background)
     {
@@ -22,22 +23,45 @@ public class BackgroundLoop : MonoBehaviour
     {
         // calculamos la nueva posición para el fondo que se moverá
         Vector2 newPosition = referenceBackground.transform.position + new Vector3(backGroundOffset, 0, 0);
-
-        // movemosel fondo a la nueva posición
-        backgroundToMove.transform.position = newPosition;
+        setPosition(newPosition, backgroundToMove);
     }
 
     void Update()
     {
-        // verificamos si los fondos están fuera del perímetro de la cámara
-        if (IsBackgroundOutsideCamera(square1))
+        if (!isPaused)
         {
-            MoveBackground(square1, square2);
+            // verificamos si los fondos están fuera del perímetro de la cámara
+            if (IsBackgroundOutsideCamera(square1))
+            {
+                MoveBackground(square1, square2);
             
+            }
+            if (IsBackgroundOutsideCamera(square2))
+            {
+                MoveBackground(square2, square1);
+            }
         }
-        if (IsBackgroundOutsideCamera(square2))
+        else
         {
-            MoveBackground(square2, square1);
+            return;
         }
+        
     }
+
+    private void setPosition(Vector2 newPos, GameObject backgroundToMove)
+    {
+        // movemosel fondo a la nueva posición
+        backgroundToMove.transform.position = newPos;
+    }
+
+    public bool getIsPaused()
+    {
+        return isPaused;
+    }
+
+    public void setIsPaused(bool option)
+    {
+        isPaused = option;
+    }
+    
 }
