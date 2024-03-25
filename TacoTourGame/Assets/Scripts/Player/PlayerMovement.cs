@@ -34,7 +34,7 @@ public class PlayerMovement : MonoBehaviour
     [Header("Jumps")] 
     [SerializeField] private float catJump;
     [SerializeField] private float dogJump;
-    private bool isActionActive = false;                        //This variable is to know if the dog is dizzy
+    private bool isDizzy = false;                        //This variable is to know if the dog is dizzy
     [SerializeField] private float dizzyDog = 1;               //Dizy time 
     private float actionTimer = 0f;                             //Timer to track the elapsed time of the action
     private int ceilingCollisionCount = 0;                      //to control when the character is collisioning with the ceiling
@@ -78,8 +78,8 @@ public class PlayerMovement : MonoBehaviour
             CheckCharacterChangeInput();
             CheckPowerUpInput();
             
-            //Updates powerUp timer
-            if (isActionActive)
+            //If Taco is Dizzy
+            if (isDizzy)
             {
                 actionTimer += Time.deltaTime;                          //We increment timer
 
@@ -87,14 +87,23 @@ public class PlayerMovement : MonoBehaviour
                 //if the timer reaches the duration, we deactivate the action .
                 if (actionTimer >= dizzyDog)
                 {
-                    isActionActive = false;
+                    isDizzy = false;
                     actionTimer = 0f;                                   //We reset the timer 
                 }
             }
             
-            if (playerState == PlayerState.Falling && isTaco && IsGrounded() && !isActionActive)
+            //If it was reaching but is now touching the floor,
+            //or was falling as tour and touches the floor
+            //goes back to running
+            if ((playerState == PlayerState.Reaching || playerState == PlayerState.Falling && !isTaco)  && IsGrounded())
             {
-                isActionActive = true;
+                playerState = PlayerState.Running;
+                animator.SetTrigger("isFalling");
+            }
+
+            if (playerState == PlayerState.Falling && isTaco && IsGrounded() && !isDizzy)
+            {
+                isDizzy = true;
                 rigidbody.velocity = new Vector2(-dizzyDog, rigidbody.velocity.y); //We make taco "go to the left"
                 playerState = PlayerState.Running; //We reset the player state to running
             }
@@ -438,9 +447,7 @@ public class PlayerMovement : MonoBehaviour
 
     void Jump()
     {
-        
         rigidbody.velocity = new Vector2(0, jumpForce);
-        
     }
 
     private void KillPlayer()
