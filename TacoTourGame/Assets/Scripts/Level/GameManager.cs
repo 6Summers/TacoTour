@@ -9,7 +9,6 @@ public class GameManager : MonoBehaviour
     private bool paused = false;
 
     [SerializeField] private float defaultVelocity = 5;
-    private float currentVelocity;
     
     
     [FormerlySerializedAs("pawseCanvas")] [SerializeField] private GameObject pauseScreen;
@@ -25,7 +24,6 @@ public class GameManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        currentVelocity = defaultVelocity;
         playerController.setCurrentVelocity(defaultVelocity);
         
         backgroundMovement = background.GetComponent<BackgroundLoop>();

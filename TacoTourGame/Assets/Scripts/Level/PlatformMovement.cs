@@ -5,6 +5,10 @@ using Vector2 = System.Numerics.Vector2;
 
 public class PlatformMovement : MonoBehaviour
 {
+    
+    //TODO: Change it so it's one script that controls all platforms
+    
+    
     [SerializeField] private float speed = 0;
 
     private Vector3 position;
@@ -31,7 +35,7 @@ public class PlatformMovement : MonoBehaviour
         
     }
     
-    //Change it so it's one script that controls all platforms
+    
     
     public float GetSpeed() {
         return speed;

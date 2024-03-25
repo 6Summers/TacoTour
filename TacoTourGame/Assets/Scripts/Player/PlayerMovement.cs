@@ -52,7 +52,6 @@ public class PlayerMovement : MonoBehaviour
     
     void Start()
     {
-        GameObject platform = GameObject.FindWithTag("Platform");
         barObject = GameObject.Find("BarObject");
         
         if (barObject != null)
@@ -74,65 +73,17 @@ public class PlayerMovement : MonoBehaviour
         {
             if(cooldown>0) cooldown--;
         
-            if (Input.GetKeyDown(KeyCode.Space) && IsGrounded() && !animator.GetBool("crouching"))
-            {
-                Jump();
-            }
-            if (Input.GetKeyDown(KeyCode.S) && IsGrounded())
-            {
-                animator.SetBool("crouching", true);
-            }
-            if (Input.GetKeyUp(KeyCode.S))
-            {
-                animator.SetBool("crouching", false);
-            }
-
-            if (Input.GetKeyDown((KeyCode.K)) && cooldown <= 0) //add cooldown check
-            {
-                isTaco = !isTaco;
-                bool theAnimator = animator.GetBool("crouching");
-                if (theAnimator)
-                {
-                    Debug.Log("animator true");
-                    
-                    animator.SetBool("crouching", false);
-                }
-                animator.SetBool("isTaco", isTaco);
-
-                if (!isTaco)
-                {
-                    jumpForce = catJump;
-                }
-                else
-                {
-                    jumpForce = dogJump;
-                }
-
-                
-                
-                cooldown = changeCooldown;
-                
-            }
+            //Checks the different keyboard inputs
+            CheckMovementInput();
+            CheckCharacterChangeInput();
+            CheckPowerUpInput();
             
-            if (Input.GetKeyDown(KeyCode.A) && !isTaco && playerState != PlayerState.Clinging && !IsGrounded())
-            {
-                playerState = PlayerState.Reaching;
-                animator.SetTrigger("isReaching");
-
-            }
-            
-            if ((Input.GetKeyUp(KeyCode.A) || isTaco) && playerState == PlayerState.Clinging) //if the player stops clinging or if they change to taco
-            {
-                rigidbody.gravityScale = 1.3f;
-                playerState = PlayerState.Falling;
-                animator.SetTrigger("isFalling");
-
-            }
-
+            //Updates powerUp timer
             if (isActionActive)
             {
                 actionTimer += Time.deltaTime;                          //We increment timer
 
+                
                 //if the timer reaches the duration, we deactivate the action .
                 if (actionTimer >= dizzyDog)
                 {
@@ -148,51 +99,147 @@ public class PlayerMovement : MonoBehaviour
                 playerState = PlayerState.Running; //We reset the player state to running
             }
 
-            if (Input.GetKeyDown(KeyCode.L) && !powerUpActivated && powerUpItems.Count > 0)
+            PowerupUpdate();
+            
+            //Show when the power up is activated
+            
+        }//end if paused
+        
+    }
+    
+
+    private void CheckMovementInput()
+    {
+        //Checks for jump
+        if (Input.GetKeyDown(KeyCode.Space) && IsGrounded() && !animator.GetBool("crouching"))
+        {
+            Jump();
+        }
+        
+        //Check to start crouching
+        if (Input.GetKeyDown(KeyCode.S) && IsGrounded())
+        {
+            animator.SetBool("crouching", true);
+        }
+        
+        //Check to end crouching
+        if (Input.GetKeyUp(KeyCode.S))
+        {
+            animator.SetBool("crouching", false);
+        }
+        
+        //Check to start reaching state    
+        if (Input.GetKeyDown(KeyCode.A) && !isTaco && playerState != PlayerState.Clinging && !IsGrounded())
+        {
+            playerState = PlayerState.Reaching;
+            animator.SetTrigger("isReaching");
+
+        }
+            
+        //if the player stops clinging or if they change to taco
+        if ((Input.GetKeyUp(KeyCode.A) || isTaco) && playerState == PlayerState.Clinging) 
+        {
+            rigidbody.gravityScale = 1.3f;
+            playerState = PlayerState.Falling;
+            animator.SetTrigger("isFalling");
+
+        }
+        
+    }
+
+    private void CheckCharacterChangeInput()
+    {
+        if (Input.GetKeyDown((KeyCode.K)) && cooldown <= 0) //add cooldown check
+        {
+            isTaco = !isTaco;
+            bool isCrouching = animator.GetBool("crouching");
+            if (isCrouching)
             {
-                powerUpActivated = true;
-                barObject.SetActive(true);
-                int lastIndex = powerUpItems.Count - 1;
-                GameObject iconToRemove = powerUpItems[lastIndex];
-                powerUpItems.RemoveAt(lastIndex);
-                Destroy(iconToRemove);
-                if (isTaco)
+                Debug.Log("animator true");
+                    
+                animator.SetBool("crouching", false);
+            }
+            animator.SetBool("isTaco", isTaco);
+
+            if (!isTaco)
+            {
+                //changes to cat
+                jumpForce = catJump;
+                
+                //if dash power-up is active, deactivates it
+                if (powerUpTimer>0)
                 {
-                    currentVelocity = gameManager.getDefaultVelocity() * 1.5f;
+                    powerUpTimer = 0;
+                    currentVelocity = gameManager.getDefaultVelocity();
                     gameManager.ChangePlatformVelocity(currentVelocity);
-                    progressBar.maxValue = limitTimePowerUp;
-                    progressBar.value = limitTimePowerUp;
-                    powerUpTimer = limitTimePowerUp;
-                    Debug.Log("progress bar val " + progressBar.value + " " + limitTimePowerUp );
-                    //change the animation of the dog
+                    powerUpActivated = false;
+                    invulnerableState = false;
+                    barObject.SetActive(false);
                 }
-                else
+            }
+            else
+            {
+                //changes to dog
+                jumpForce = dogJump;
+
+                //if second life power-up is active, deactivates it
+                if (powerUpTimer > 0)
                 {
-                    progressBar.maxValue = limitTimePowerUp*4;
-                    progressBar.value = limitTimePowerUp*4;
-                    powerUpTimer = limitTimePowerUp*4;
-                    invulnerableState = true;
-                    
-                    
-                    //change the animation of the cat
+                    Debug.Log(powerUpTimer);
+                    Debug.Log("PIERDE PODER");
+                    powerUpTimer = 0; 
+                    powerUpActivated = false;
+                    invulnerableState = false;
+                    barObject.SetActive(false);
                 }
                 
             }
-            //Show when the power up is activated
-            if (powerUpActivated) //if (powerUpActivated && powerUpImage.enabled)
+
+            cooldown = changeCooldown;
+        }
+    }
+
+    private void CheckPowerUpInput()
+    {
+        //If there are powerUp items and the power Up is not activated, the power-up activates
+        if (Input.GetKeyDown(KeyCode.L) && !powerUpActivated && powerUpItems.Count > 0)
+        {
+            powerUpActivated = true;
+            barObject.SetActive(true);
+            int lastIndex = powerUpItems.Count - 1;
+            GameObject iconToRemove = powerUpItems[lastIndex];
+            powerUpItems.RemoveAt(lastIndex);
+            Destroy(iconToRemove);
+            if (isTaco)
             {
-                if (isTaco)
+                currentVelocity = gameManager.getDefaultVelocity() * 1.5f;
+                gameManager.ChangePlatformVelocity(currentVelocity);
+                progressBar.maxValue = limitTimePowerUp;
+                progressBar.value = limitTimePowerUp;
+                powerUpTimer = limitTimePowerUp;
+                Debug.Log("progress bar val " + progressBar.value + " " + limitTimePowerUp );
+                //change the animation of the dog
+            }
+            else
+            {
+                progressBar.maxValue = limitTimePowerUp*4;
+                progressBar.value = limitTimePowerUp*4;
+                powerUpTimer = limitTimePowerUp*4;
+                invulnerableState = true;
+                    
+                    
+                //change the animation of the cat
+            }
+                
+        }
+    }
+
+    private void PowerupUpdate()
+    {
+        if (powerUpActivated) //if (powerUpActivated && powerUpImage.enabled)
+            {
+                if (isTaco) //Taco Power-Up
                 {
-                    if (invulnerableState)
-                    {
-                        Debug.Log(powerUpTimer);
-                        Debug.Log("PIERDE PODER");
-                        powerUpTimer = 0; 
-                        //gameManager.ChangePlatformVelocity(gameManager.getDefaultVelocity());
-                        powerUpActivated = false;
-                        invulnerableState = false;
-                        barObject.SetActive(false);
-                    }
                     if (powerUpTimer <= 0)
                     {
                         powerUpTimer = 0;
@@ -207,18 +254,8 @@ public class PlayerMovement : MonoBehaviour
                         progressBar.value -= Time.deltaTime;
                     }
                 }
-                else 
+                else    //Tour Power-Up
                 {   
-                    if (currentVelocity > gameManager.getDefaultVelocity())
-                    {
-                        powerUpTimer = 0;
-                        currentVelocity = gameManager.getDefaultVelocity();
-                        gameManager.ChangePlatformVelocity(currentVelocity);
-                        powerUpActivated = false;
-                        invulnerableState = false;
-                        barObject.SetActive(false);
-                    }
-
                     if (powerUpTimer <= 0)
                     {
                         powerUpTimer = 0;
@@ -249,8 +286,6 @@ public class PlayerMovement : MonoBehaviour
                     reSpawnTourTime -= Time.deltaTime;
                 }
             }
-        }//end if paused
-        
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -349,7 +384,6 @@ public class PlayerMovement : MonoBehaviour
             }
         }
     }
-
 
     private void OnCollisionStay2D(Collision2D other)
     {

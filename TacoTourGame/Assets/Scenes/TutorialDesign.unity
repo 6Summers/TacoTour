@@ -10250,6 +10250,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1664918421}
+  - component: {fileID: 1664918422}
   m_Layer: 0
   m_Name: LevelManager
   m_TagString: Untagged
@@ -10272,6 +10273,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1664918422
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1664918420}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 921285d5091888441bc464ed35d98df8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  defaultVelocity: 5
+  pauseScreen: {fileID: 1121188095}
+  playerController: {fileID: 2116822207}
+  background: {fileID: 170468099}
+  level: {fileID: 536172072}
 --- !u!1001 &1666452502
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13196,16 +13214,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e7e839014134c5408f5853637171221, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  speed: 5
+  gameManager: {fileID: 1664918422}
   changeCooldown: 170
   isTaco: 1
   catJump: 11
   dogJump: 7.5
   dizzyDog: 10
-  background: {fileID: 170468099}
   powerUpUIParent: {fileID: 212109401}
   powerUpUIPrefab: {fileID: 8935455593989837843, guid: ebb7a1f64fa3208469fa3d207599f907, type: 3}
-  level: {fileID: 536172072}
 --- !u!1 &2120247506
 GameObject:
   m_ObjectHideFlags: 0
