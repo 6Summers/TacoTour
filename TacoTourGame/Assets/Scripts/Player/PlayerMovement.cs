@@ -6,15 +6,14 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using TMPro; 
+using TMPro;
+using UnityEngine.Serialization;
 
 public class PlayerMovement : MonoBehaviour
 {
-    private PlatformMovement platformMovement;
-    private CameraMovement cameraMovement;
-    private BackgroundLoop backgroundMovement;
+    [SerializeField] private GameManager gameManager;
     
-    public float speed;
+    private float currentVelocity;
     private float jumpForce = 50f;
     private Rigidbody2D rigidbody;
     private Animator animator;
@@ -28,7 +27,6 @@ public class PlayerMovement : MonoBehaviour
     private float reSpawnTourTime = 2f;
     private bool delayCat = false;
     private float cooldown;
-    private float defaultVelocity = 0f;
     private bool powerUpActivated = false;
     private bool paused = false;
     [SerializeField] private bool isTaco = true;
@@ -40,17 +38,9 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float dizzyDog = 1;               //Dizy time 
     private float actionTimer = 0f;                             //Timer to track the elapsed time of the action
     private int ceilingCollisionCount = 0;                      //to control when the character is collisioning with the ceiling
-    
-    private Button optionButton;
-    private Button closeButton;
-    private TextMeshProUGUI pawseCanvas;
-    private TextMeshProUGUI pressP;
-    
-   [SerializeField] private GameObject background; 
-   
+
     private float powerUpTimer = 0f;                            //Timer to control how long the power up is active 
     private float limitTimePowerUp = 5.0f;
-    private float defaultCameraVelocity;
     private bool invulnerableState = false;
 
     [Header("Power-Ups UI")]
@@ -60,16 +50,9 @@ public class PlayerMovement : MonoBehaviour
     private Slider progressBar;
     private GameObject barObject = null;
     
-    [Header("Reference to platforms")] 
-    [SerializeField] private Transform level;
     void Start()
     {
         GameObject platform = GameObject.FindWithTag("Platform");
-        pawseCanvas = GameObject.Find("Pawse").GetComponent<TextMeshProUGUI>();
-        pressP = GameObject.Find("PressP").GetComponent<TextMeshProUGUI>();
-        optionButton = GameObject.Find("OptionButton").GetComponent<Button>();
-        closeButton = GameObject.Find("CloseButton").GetComponent<Button>();
-        platformMovement = platform.GetComponent<PlatformMovement>();
         barObject = GameObject.Find("BarObject");
         
         if (barObject != null)
@@ -77,54 +60,16 @@ public class PlayerMovement : MonoBehaviour
             progressBar = barObject.GetComponentInChildren<Slider>();
             barObject.SetActive(false);
         }
-        
-        cameraMovement = background.GetComponent<CameraMovement>();
-        backgroundMovement = background.GetComponent<BackgroundLoop>();
-        defaultCameraVelocity = cameraMovement.GetCameraSpeed();
-        
-        defaultVelocity = platformMovement.GetSpeed();
         rigidbody =  gameObject.GetComponent<Rigidbody2D>(); 
         animator = gameObject.GetComponent<Animator>();
         
         animator.SetBool("isTaco", isTaco);
         jumpForce = dogJump;
-        pawseCanvas.enabled = false;
-        pressP.enabled = false;
-        optionButton.gameObject.SetActive(false);
-        closeButton.gameObject.SetActive(false);
     }
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.P))
-        {
-            paused = !paused;
-            Debug.Log("pausado " + paused);
-            
-            if (paused)
-            {
-                applyVelocity(0);
-                applyVelocityCamera(0);
-                pawseCanvas.enabled = true;
-                optionButton.gameObject.SetActive(true);
-                closeButton.gameObject.SetActive(true);
-                animator.speed = 0;
-                backgroundMovement.setIsPaused(true);
-                pressP.enabled = true;
-            }
-            else
-            {
-                applyVelocity(defaultVelocity);
-                applyVelocityCamera(defaultCameraVelocity);
-                pawseCanvas.enabled = false;
-                pressP.enabled = false;
-                optionButton.gameObject.SetActive(false);
-                closeButton.gameObject.SetActive(false);
-                animator.speed = 1;
-                backgroundMovement.setIsPaused(false);
-            }
-        }
-
+       
         if (!paused)
         {
             if(cooldown>0) cooldown--;
@@ -213,7 +158,8 @@ public class PlayerMovement : MonoBehaviour
                 Destroy(iconToRemove);
                 if (isTaco)
                 {
-                    applyVelocity(defaultVelocity * 1.2f);
+                    currentVelocity = gameManager.getDefaultVelocity() * 1.5f;
+                    gameManager.ChangePlatformVelocity(currentVelocity);
                     progressBar.maxValue = limitTimePowerUp;
                     progressBar.value = limitTimePowerUp;
                     powerUpTimer = limitTimePowerUp;
@@ -242,7 +188,7 @@ public class PlayerMovement : MonoBehaviour
                         Debug.Log(powerUpTimer);
                         Debug.Log("PIERDE PODER");
                         powerUpTimer = 0; 
-                        applyVelocity(defaultVelocity);
+                        //gameManager.ChangePlatformVelocity(gameManager.getDefaultVelocity());
                         powerUpActivated = false;
                         invulnerableState = false;
                         barObject.SetActive(false);
@@ -250,7 +196,8 @@ public class PlayerMovement : MonoBehaviour
                     if (powerUpTimer <= 0)
                     {
                         powerUpTimer = 0;
-                        applyVelocity(defaultVelocity);
+                        currentVelocity = gameManager.getDefaultVelocity();
+                        gameManager.ChangePlatformVelocity(currentVelocity);
                         powerUpActivated = false;
                         barObject.SetActive(false);
                     }
@@ -258,17 +205,15 @@ public class PlayerMovement : MonoBehaviour
                     {
                         powerUpTimer -= Time.deltaTime;
                         progressBar.value -= Time.deltaTime;
-                  
-                        if(platformMovement.GetSpeed() < defaultVelocity * 1.5f)
-                            applyVelocity(defaultVelocity * 1.5f);
                     }
                 }
                 else 
                 {   
-                    if (platformMovement.GetSpeed() > defaultVelocity)
+                    if (currentVelocity > gameManager.getDefaultVelocity())
                     {
-                        powerUpTimer = 0; 
-                        applyVelocity(defaultVelocity);
+                        powerUpTimer = 0;
+                        currentVelocity = gameManager.getDefaultVelocity();
+                        gameManager.ChangePlatformVelocity(currentVelocity);
                         powerUpActivated = false;
                         invulnerableState = false;
                         barObject.SetActive(false);
@@ -280,7 +225,6 @@ public class PlayerMovement : MonoBehaviour
                         powerUpActivated = false;
                         invulnerableState = false;
                         barObject.SetActive(false);
-                        invulnerableState = false;
                     }
                     else
                     {
@@ -295,8 +239,9 @@ public class PlayerMovement : MonoBehaviour
             {
                 if (reSpawnTourTime <= 0)
                 {
-                    applyVelocity(defaultVelocity);
-                    applyVelocityCamera(defaultCameraVelocity);
+                    currentVelocity = gameManager.getDefaultVelocity();
+                    gameManager.ChangePlatformVelocity(currentVelocity);
+                    gameManager.PauseCamera(false);
                     reSpawnTourTime = 2f;
                 }
                 else
@@ -318,8 +263,9 @@ public class PlayerMovement : MonoBehaviour
             {
                 //pausar juego
                 //lift Tour on a platform
-                applyVelocity(0);
-                applyVelocityCamera(0);
+                currentVelocity = 0;
+                gameManager.ChangePlatformVelocity(0);
+                gameManager.PauseCamera(true);
                 gameObject.transform.position = new Vector3(gameObject.transform.position.x, 5f);
                 animator.SetTrigger("isReaching"); //change animation to revive
                 powerUpTimer = 0;
@@ -424,7 +370,7 @@ public class PlayerMovement : MonoBehaviour
                 transform.position = new Vector3(transform.position.x, newYPosition, transform.position.z);*/
                 
                 Vector3 position = gameObject.GetComponent<Transform>().position;
-                position = new Vector3(position.x - speed * Time.deltaTime, position.y, position.z);
+                position = new Vector3(position.x - currentVelocity * Time.deltaTime, position.y, position.z);
                 gameObject.GetComponent<Transform>().position = position;
             }
            
@@ -475,79 +421,30 @@ public class PlayerMovement : MonoBehaviour
             SceneManager.LoadScene("GameOver");
     }
 
-    private void applyVelocityCamera(float newVelocity)
+
+    public void Pause(bool paused)
     {
-        cameraMovement = background.GetComponent<CameraMovement>();
+        this.paused = paused;
+
+        if (paused)
+            currentVelocity = 0;
+        else if (powerUpActivated && isTaco)
+            currentVelocity = gameManager.getDefaultVelocity() * 1.5f;
+        else
+            currentVelocity = gameManager.getDefaultVelocity();
         
-        if(cameraMovement != null)
-            cameraMovement.GetComponent<CameraMovement>().SetCameraSpeed(newVelocity);
+        gameManager.ChangePlatformVelocity(currentVelocity);
+        
     }
 
-    private void applyVelocity(float newVelocity)
+    public Animator getAnimator()
     {
-        int platformAmount = level.childCount;
-        PlatformMovement platform;
-        
-        //Goes through all the children of the game object containing the design of the level and changes their speed
-        for (int i = 0; i < platformAmount; i++)
-        {
-            platform = level.GetChild(i).GetComponent<PlatformMovement>();
-            if (platform!= null)
-            {
-                platform.SetSpeed(newVelocity); // Change the speed to the desired value
-            }
-        }
-        
-        /*
-        GameObject[] platforms = GameObject.FindGameObjectsWithTag("Platform");
-        foreach (GameObject platform in platforms)
-        {
-            PlatformMovement platformMovement = platform.GetComponent<PlatformMovement>();
-            if (platformMovement != null)
-            {
-                platformMovement.SetSpeed(newVelocity); // Change the speed to the desired value
-            }
-        }
-            
-        GameObject[] ceilings = GameObject.FindGameObjectsWithTag("Ceiling");
-        foreach (GameObject ceiling in ceilings)
-        {
-            PlatformMovement platformMovement = ceiling.GetComponent<PlatformMovement>();
-            if (platformMovement != null)
-            {
-                platformMovement.SetSpeed(newVelocity); // Change the speed to the desired value
-            }
-        }
-            
-        GameObject[] crouchZones = GameObject.FindGameObjectsWithTag("Floor");
-        foreach (GameObject crouchZone in crouchZones)
-        {
-            PlatformMovement platformMovement = crouchZone.GetComponent<PlatformMovement>();
-            if (platformMovement != null)
-            {
-                platformMovement.SetSpeed(newVelocity); // Change the speed to the desired value
-            }
-        }
-        GameObject[] powerUps = GameObject.FindGameObjectsWithTag("PowerUp");
-        foreach (GameObject powerUp in powerUps)
-        {
-            PlatformMovement platformMovement = powerUp.GetComponent<PlatformMovement>();
-            if (platformMovement != null)
-            {
-                platformMovement.SetSpeed(newVelocity); // Change the speed to the desired value
-            }
-        }
-        GameObject[] endzone = GameObject.FindGameObjectsWithTag("EndZone");
-        foreach (GameObject endZones in endzone)
-        {
-            PlatformMovement platformMovement = endZones.GetComponent<PlatformMovement>();
-            if (platformMovement != null)
-            {
-                platformMovement.SetSpeed(newVelocity); // Change the speed to the desired value
-            }
-        }
-       */ 
+        return animator;
     }
-    
+
+    public void setCurrentVelocity(float currentVelocity)
+    {
+        this.currentVelocity = currentVelocity;
+    }
 
 }

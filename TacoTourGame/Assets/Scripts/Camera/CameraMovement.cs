@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class CameraMovement : MonoBehaviour
-{ 
-    private float cameraSpeed = -2f;
+{
+    [SerializeField] private float defaultCameraSpeed = -2f;
+    private float cameraSpeed;
     private bool isPaused = false;
     
     //we get the rect transform
@@ -12,6 +13,7 @@ public class CameraMovement : MonoBehaviour
     
     void Start()
     {
+       cameraSpeed = defaultCameraSpeed;
        rectTransform = GetComponent<RectTransform>();
     }
     // Update is called once per frame
@@ -26,23 +28,16 @@ public class CameraMovement : MonoBehaviour
         }
 
     }
-    
-    public float GetCameraSpeed() {
-        return cameraSpeed;
-    }
 
-    public void SetCameraSpeed(float newSpeed) {
-        cameraSpeed = newSpeed;
-    }
-    
-    public bool getIsPaused()
+    public void Pause(bool pause)
     {
-        return isPaused;
-    }
-
-    public void setIsPaused(bool option)
-    {
-        isPaused = option;
+        isPaused = pause;
+        
+        if (isPaused)
+            cameraSpeed = 0f;
+        else
+            cameraSpeed = defaultCameraSpeed;
+        
     }
     
 }
